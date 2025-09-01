@@ -46,7 +46,7 @@ public class LoginFrame extends JFrame {
         User user = dao.authenticate(username, password);
         if (user != null) {
             JOptionPane.showMessageDialog(this, "Welcome " + user.getUsername());
-            new HomeFrame(user).setVisible(true);  // ✅ Pass User to HomeFrame
+            new HomeFrame(user).setVisible(true); 
             this.dispose();
         } else {
             JOptionPane.showMessageDialog(this, "Invalid credentials!");
