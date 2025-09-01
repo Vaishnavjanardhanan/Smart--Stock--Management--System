@@ -11,7 +11,7 @@ import java.util.List;
 
 public class HomeFrame extends JFrame {
     private JTable productTable;
-    private User loggedInUser;  // ✅ store current user
+    private User loggedInUser;  
 
     public HomeFrame(User user) {
         this.loggedInUser = user;
@@ -37,7 +37,7 @@ public class HomeFrame extends JFrame {
         JButton deleteBtn = new JButton("Delete Product");
         JButton sellBtn = new JButton("Sell Product");
 
-        // ✅ Role-based permissions
+      
         if ("cashier".equalsIgnoreCase(user.getRole())) {
             addBtn.setEnabled(false);
             updateBtn.setEnabled(false);
@@ -115,3 +115,4 @@ public class HomeFrame extends JFrame {
         }
     }
 }
+
