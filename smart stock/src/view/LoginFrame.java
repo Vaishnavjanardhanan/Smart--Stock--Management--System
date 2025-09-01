@@ -1,69 +1,55 @@
-
 package view;
 
+import model.User;
+import model.UserDAO;
+
 import javax.swing.*;
-import java.awt.event.*;
-import java.io.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.awt.*;
 
 public class LoginFrame extends JFrame {
-    private JTextField userField;
-    private JPasswordField passField;
-    private JButton loginButton;
+    private JTextField usernameField;
+    private JPasswordField passwordField;
 
     public LoginFrame() {
-        setTitle("Login");
-        setSize(300, 180);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setTitle("Smart Stock - Login");
+        setSize(400, 300);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(null);
+        setLayout(new BorderLayout());
 
-        JLabel userLabel = new JLabel("Username:");
-        userLabel.setBounds(20, 20, 80, 25);
-        add(userLabel);
+        JLabel background = new JLabel(new ImageIcon("resources/background.png"));
+        setContentPane(background);
+        background.setLayout(new GridBagLayout());
 
-        userField = new JTextField();
-        userField.setBounds(100, 20, 150, 25);
-        add(userField);
+        JPanel panel = new JPanel(new GridLayout(3,2,10,10));
+        panel.setOpaque(false);
+        usernameField = new JTextField();
+        passwordField = new JPasswordField();
 
-        JLabel passLabel = new JLabel("Password:");
-        passLabel.setBounds(20, 60, 80, 25);
-        add(passLabel);
+        panel.add(new JLabel("Username:"));
+        panel.add(usernameField);
+        panel.add(new JLabel("Password:"));
+        panel.add(passwordField);
 
-        passField = new JPasswordField();
-        passField.setBounds(100, 60, 150, 25);
-        add(passField);
+        JButton loginButton = new JButton("Login");
+        loginButton.addActionListener(e -> login());
+        panel.add(new JLabel());
+        panel.add(loginButton);
 
-        loginButton = new JButton("Login");
-        loginButton.setBounds(100, 100, 150, 25);
-        add(loginButton);
-
-        loginButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String user = userField.getText();
-                String pass = new String(passField.getPassword());
-
-                if (!user.isEmpty() && !pass.isEmpty()) {
-                    logLogin(user);
-                    dispose();
-                    new ProductFrame();
-                } else {
-                    JOptionPane.showMessageDialog(null, "Please enter all fields.");
-                }
-            }
-        });
-
-        setVisible(true);
+        background.add(panel, new GridBagConstraints());
     }
 
-    private void logLogin(String username) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("data/login_logs.txt", true))) {
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
-            writer.write(username + " logged in at " + dtf.format(LocalDateTime.now()));
-            writer.newLine();
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void login() {
+        String username = usernameField.getText();
+        String password = new String(passwordField.getPassword());
+        UserDAO dao = new UserDAO();
+        User user = dao.authenticate(username, password);
+        if (user != null) {
+            JOptionPane.showMessageDialog(this, "Welcome " + user.getUsername());
+            new HomeFrame(user).setVisible(true);  // ✅ Pass User to HomeFrame
+            this.dispose();
+        } else {
+            JOptionPane.showMessageDialog(this, "Invalid credentials!");
         }
     }
 }
