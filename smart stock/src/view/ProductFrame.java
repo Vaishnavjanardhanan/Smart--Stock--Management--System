@@ -1,86 +1,156 @@
 
 package view;
 
+import model.ProductDAO;
+import model.Product;
+
 import javax.swing.*;
-import java.awt.event.*;
-import java.io.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.util.List;
 
 public class ProductFrame extends JFrame {
-    private JTextField idField, nameField, categoryField, priceField, quantityField;
-    private JButton saveButton;
+    private JTable table;
+    private DefaultTableModel model;
 
     public ProductFrame() {
-        setTitle("Add Product");
-        setSize(400, 300);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setTitle("Product Management");
+        setSize(750, 400);
         setLocationRelativeTo(null);
-        setLayout(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        JLabel idLabel = new JLabel("Product ID:");
-        idLabel.setBounds(30, 20, 100, 25);
-        add(idLabel);
+        model = new DefaultTableModel(new String[]{"ID", "Name", "Description", "Price", "Stock"}, 0);
+        table = new JTable(model);
+        loadProducts();
 
-        idField = new JTextField();
-        idField.setBounds(150, 20, 200, 25);
-        add(idField);
+        JScrollPane scrollPane = new JScrollPane(table);
 
-        JLabel nameLabel = new JLabel("Product Name:");
-        nameLabel.setBounds(30, 60, 100, 25);
-        add(nameLabel);
-
-        nameField = new JTextField();
-        nameField.setBounds(150, 60, 200, 25);
-        add(nameField);
-
-        JLabel catLabel = new JLabel("Category:");
-        catLabel.setBounds(30, 100, 100, 25);
-        add(catLabel);
-
-        categoryField = new JTextField();
-        categoryField.setBounds(150, 100, 200, 25);
-        add(categoryField);
-
-        JLabel priceLabel = new JLabel("Price:");
-        priceLabel.setBounds(30, 140, 100, 25);
-        add(priceLabel);
-
-        priceField = new JTextField();
-        priceField.setBounds(150, 140, 200, 25);
-        add(priceField);
-
-        JLabel qtyLabel = new JLabel("Quantity:");
-        qtyLabel.setBounds(30, 180, 100, 25);
-        add(qtyLabel);
-
-        quantityField = new JTextField();
-        quantityField.setBounds(150, 180, 200, 25);
-        add(quantityField);
-
-        saveButton = new JButton("Save Product");
-        saveButton.setBounds(150, 220, 200, 25);
-        add(saveButton);
-
-        saveButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                saveProduct();
-            }
+        JButton addBtn = new JButton("Add Product");
+        addBtn.addActionListener(e -> {
+            new AddProductFrame().setVisible(true);
+            loadProducts();
         });
 
-        setVisible(true);
+        JButton updateBtn = new JButton("Update Stock");
+        updateBtn.addActionListener(e -> {
+            new UpdateStockFrame().setVisible(true);
+            loadProducts();
+        });
+
+        JButton deleteBtn = new JButton("Delete Product");
+        deleteBtn.addActionListener(e -> {
+            new DeleteProductFrame().setVisible(true);
+            loadProducts();
+        });
+
+        JButton saleBtn = new JButton("Record Sale");
+        saleBtn.addActionListener(e -> {
+            new RecordSaleFrame().setVisible(true);
+            loadProducts();
+        });
+
+        JButton refreshBtn = new JButton("Refresh");
+        refreshBtn.addActionListener(e -> loadProducts());
+
+        JPanel panel = new JPanel();
+        panel.add(addBtn);
+        panel.add(updateBtn);
+        panel.add(deleteBtn);
+        panel.add(saleBtn);   // new button
+        panel.add(refreshBtn);
+
+        add(scrollPane, BorderLayout.CENTER);
+        add(panel, BorderLayout.SOUTH);
     }
 
-    private void saveProduct() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("data/products.txt", true))) {
-            String product = idField.getText() + "," +
-                             nameField.getText() + "," +
-                             categoryField.getText() + "," +
-                             priceField.getText() + "," +
-                             quantityField.getText();
-            writer.write(product);
-            writer.newLine();
-            JOptionPane.showMessageDialog(null, "Product saved successfully.");
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void loadProducts() {
+        model.setRowCount(0);
+        List<Product> products = ProductDAO.getAllProducts();
+        for (Product p : products) {
+            model.addRow(new Object[]{
+                p.getId(),
+                p.getName(),
+                p.getDescription(),
+                p.getPrice(),
+                p.getStock()
+            });
         }
     }
-}
+            }package view;
+
+import model.ProductDAO;
+import model.Product;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.util.List;
+
+public class ProductFrame extends JFrame {
+    private JTable table;
+    private DefaultTableModel model;
+
+    public ProductFrame() {
+        setTitle("Product Management");
+        setSize(750, 400);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        model = new DefaultTableModel(new String[]{"ID", "Name", "Description", "Price", "Stock"}, 0);
+        table = new JTable(model);
+        loadProducts();
+
+        JScrollPane scrollPane = new JScrollPane(table);
+
+        JButton addBtn = new JButton("Add Product");
+        addBtn.addActionListener(e -> {
+            new AddProductFrame().setVisible(true);
+            loadProducts();
+        });
+
+        JButton updateBtn = new JButton("Update Stock");
+        updateBtn.addActionListener(e -> {
+            new UpdateStockFrame().setVisible(true);
+            loadProducts();
+        });
+
+        JButton deleteBtn = new JButton("Delete Product");
+        deleteBtn.addActionListener(e -> {
+            new DeleteProductFrame().setVisible(true);
+            loadProducts();
+        });
+
+        JButton saleBtn = new JButton("Record Sale");
+        saleBtn.addActionListener(e -> {
+            new RecordSaleFrame().setVisible(true);
+            loadProducts();
+        });
+
+        JButton refreshBtn = new JButton("Refresh");
+        refreshBtn.addActionListener(e -> loadProducts());
+
+        JPanel panel = new JPanel();
+        panel.add(addBtn);
+        panel.add(updateBtn);
+        panel.add(deleteBtn);
+        panel.add(saleBtn);   // new button
+        panel.add(refreshBtn);
+
+        add(scrollPane, BorderLayout.CENTER);
+        add(panel, BorderLayout.SOUTH);
+    }
+
+    private void loadProducts() {
+        model.setRowCount(0);
+        List<Product> products = ProductDAO.getAllProducts();
+        for (Product p : products) {
+            model.addRow(new Object[]{
+                p.getId(),
+                p.getName(),
+                p.getDescription(),
+                p.getPrice(),
+                p.getStock()
+            });
+        }
+    }
+        }
