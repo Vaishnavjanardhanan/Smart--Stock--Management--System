@@ -18,5 +18,24 @@ public class DeleteProductFrame extends JFrame {
         panel.add(new JLabel("Product ID:"));
         panel.add(productIdField);
         panel.add(new JLabel(""));
-     
+     panel.add(deleteBtn);
+
+        add(panel);
+
+        deleteBtn.addActionListener(e -> {
+            try {
+                int productId = Integer.parseInt(productIdField.getText().trim());
+                boolean success = ProductDAO.deleteProduct(productId);
+                if (success) {
+                    JOptionPane.showMessageDialog(this, "Product deleted successfully!");
+                    dispose();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to delete product. Check Product ID.");
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Please enter a valid Product ID.");
+            }
+        });
+    }
+}
       
