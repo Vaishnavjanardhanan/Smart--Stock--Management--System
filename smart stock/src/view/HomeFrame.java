@@ -112,7 +112,7 @@ public class HomeFrame extends JFrame {
             }
         });
 
-        // ✅ Increment stock instead of overwrite
+        //  Increment stock instead of overwrite
         updateBtn.addActionListener(e -> {
             int row = productTable.getSelectedRow();
             if (row >= 0) {
@@ -150,7 +150,7 @@ public class HomeFrame extends JFrame {
             }
         });
 
-        // ✅ Print products directly
+        //  Print products directly
         printBtn.addActionListener(e -> {
             try {
                 boolean complete = productTable.print();
@@ -191,3 +191,4 @@ public class HomeFrame extends JFrame {
         }
     }
 }
+
