@@ -89,7 +89,7 @@ public class HomeFrame extends JFrame {
         return panel;
     }
 
-    // ✅ Dashboard panel with product counts
+    //  Dashboard panel with product counts
     private JPanel createDashboardPanel(String username, String role) {
         JPanel panel = new JPanel(new GridLayout(2, 2, 20, 20));
         panel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
