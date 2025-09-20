@@ -58,3 +58,62 @@ public class HomeFrame extends JFrame {
                 if (backgroundImage != null) {
                     g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
                 }
+        // ===== Button Actions =====
+        CardLayout cl = (CardLayout) contentPanel.getLayout();
+        btnOverview.addActionListener(e -> cl.show(contentPanel, "DASHBOARD"));
+        btnProducts.addActionListener(e -> cl.show(contentPanel, "PRODUCTS"));
+        btnCustomers.addActionListener(e -> cl.show(contentPanel, "CUSTOMERS"));
+        btnSales.addActionListener(e -> cl.show(contentPanel, "SALES"));
+        btnReports.addActionListener(e -> cl.show(contentPanel, "REPORTS"));
+        btnLogout.addActionListener(e -> {
+            dispose();
+            new LoginFrame().setVisible(true);
+        });
+    }
+
+    private JButton createStyledButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFocusPainted(false);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btn.setBackground(Color.WHITE);
+        btn.setForeground(new Color(58, 95, 127));
+        btn.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+        return btn;
+    }
+
+    private JPanel createContentPanel(String message) {
+        JPanel panel = new JPanel(new BorderLayout());
+        JLabel label = new JLabel(message, JLabel.CENTER);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        panel.add(label, BorderLayout.CENTER);
+        return panel;
+    }
+
+    // ✅ Dashboard panel with product counts
+    private JPanel createDashboardPanel(String username, String role) {
+        JPanel panel = new JPanel(new GridLayout(2, 2, 20, 20));
+        panel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
+
+        JLabel welcome = new JLabel("Welcome, " + username + " (" + role + ")", JLabel.CENTER);
+        welcome.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        panel.add(welcome);
+
+        JLabel totalProducts = new JLabel("📦 Total Products: " + ProductDAO.countProducts(), JLabel.CENTER);
+        totalProducts.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        panel.add(totalProducts);
+
+        JLabel lowStock = new JLabel("⚠ Low Stock: " + ProductDAO.countLowStock(), JLabel.CENTER);
+        lowStock.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        panel.add(lowStock);
+
+        JLabel reports = new JLabel("📑 Reports Overview", JLabel.CENTER);
+        reports.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        panel.add(reports);
+
+        return panel;
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new DashboardFrame("admin", "ADMIN").setVisible(true));
+    }
+}
