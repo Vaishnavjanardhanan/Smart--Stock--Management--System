@@ -18,7 +18,7 @@ public class LoginFrame extends JFrame {
         setLayout(new BorderLayout());
 
         // Background (optional)
-        JLabel background = new JLabel(new ImageIcon("resources/background.png"));
+        JLabel background = new JLabel(new ImageIcon("Smart--Stock--Management--System-main/resources/background.png"));
         setContentPane(background);
         background.setLayout(new GridBagLayout());
 
