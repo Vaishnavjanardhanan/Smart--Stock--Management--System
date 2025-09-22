@@ -5,190 +5,559 @@ import model.ProductDAO;
 import model.User;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
+import java.awt.geom.RoundRectangle2D;
 import java.util.List;
 
 public class HomeFrame extends JFrame {
     private JTable productTable;
     private User loggedInUser;
-    private Image backgroundImage;
+    private GradientPanel contentPanel;
+
+    // Declare buttons as instance variables
+    private JButton addProductBtn, addStockBtn, deleteBtn, sellBtn, printBtn, backBtn;
+    private JButton btnDashboard, btnProducts, btnCustomers, btnSales, btnReports, btnSettings, btnLogout;
+
+    // Color scheme
+    private final Color PRIMARY_COLOR = new Color(102, 0, 153);
+    private final Color SECONDARY_COLOR = new Color(147, 112, 219);
+    private final Color ACCENT_COLOR = new Color(255, 105, 180);
+    private final Color BACKGROUND_COLOR = new Color(245, 245, 255);
+    private final Color CARD_COLOR = Color.WHITE;
 
     public HomeFrame(User user) {
         this.loggedInUser = user;
+        initializeUI();
+        setupSidebar();
+        setupMainContent();
+        loadData();
+        setupActions();
+    }
 
-        setTitle("Smart Stock - Home (" + user.getRole() + ")");
-        setSize(1000, 600);
+    private void initializeUI() {
+        setTitle("Smart Stock - Home (" + loggedInUser.getRole() + ")");
+        setSize(1200, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+    }
 
-        // ===== Sidebar =====
-        JPanel sidebar = new JPanel();
-        sidebar.setBackground(new Color(128, 0, 128)); // purple
-        sidebar.setLayout(new GridLayout(10, 1, 5, 5));
-        sidebar.setPreferredSize(new Dimension(200, getHeight()));
+    private void setupSidebar() {
+        JPanel sidebar = new GradientPanel(PRIMARY_COLOR, new Color(75, 0, 130));
+        sidebar.setLayout(new BorderLayout());
+        sidebar.setPreferredSize(new Dimension(250, getHeight()));
+        sidebar.setBorder(new EmptyBorder(20, 10, 20, 10));
+
+        // Header
+        JPanel headerPanel = new JPanel();
+        headerPanel.setOpaque(false);
+        headerPanel.setLayout(new BorderLayout());
 
         JLabel title = new JLabel("Smart Stock", JLabel.CENTER);
-        title.setFont(new Font("Arial", Font.BOLD, 18));
+        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
         title.setForeground(Color.WHITE);
-        sidebar.add(title);
+        title.setBorder(new EmptyBorder(0, 0, 20, 0));
 
-        JButton btnDashboard = new JButton("Dashboard");
-        JButton btnProducts = new JButton("Manage Products");
-        JButton btnCustomers = new JButton("Manage Customers");
-        JButton btnSales = new JButton("Sales");
-        JButton btnReports = new JButton("Reports");
-        JButton btnLogout = new JButton("Logout");
+        JLabel userInfo = new JLabel(loggedInUser.getUsername() + " (" + loggedInUser.getRole() + ")", JLabel.CENTER);
+        userInfo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        userInfo.setForeground(new Color(200, 200, 200));
 
-        JButton[] buttons = {btnDashboard, btnProducts, btnCustomers, btnSales, btnReports, btnLogout};
-        for (JButton b : buttons) {
-            b.setBackground(Color.WHITE);
-            b.setForeground(new Color(128, 0, 128));
-            b.setFocusPainted(false);
-            sidebar.add(b);
+        headerPanel.add(title, BorderLayout.NORTH);
+        headerPanel.add(userInfo, BorderLayout.SOUTH);
+
+        // Navigation buttons
+        JPanel navPanel = new JPanel();
+        navPanel.setOpaque(false);
+        navPanel.setLayout(new GridLayout(7, 1, 10, 10));
+        navPanel.setBorder(new EmptyBorder(20, 0, 20, 0));
+
+        // Create sidebar buttons
+        btnDashboard = createNavButton("Dashboard", "📊");
+        btnProducts = createNavButton("Manage Products", "📦");
+        btnCustomers = createNavButton("Manage Customers", "👥");
+        btnSales = createNavButton("Sales", "💰");
+        btnReports = createNavButton("Reports", "📈");
+        btnSettings = createNavButton("Settings", "⚙");
+        btnLogout = createNavButton("Logout", "🚪");
+
+        JButton[] navButtons = {btnDashboard, btnProducts, btnCustomers, btnSales, btnReports, btnSettings, btnLogout};
+
+        for (JButton button : navButtons) {
+            navPanel.add(button);
+
+            // Disable certain features for cashier
+            if ("cashier".equalsIgnoreCase(loggedInUser.getRole()) &&
+                    (button.getText().contains("Manage Products") || button.getText().contains("Reports"))) {
+                button.setEnabled(false);
+                button.setBackground(new Color(100, 100, 100));
+            }
         }
 
-        add(sidebar, BorderLayout.WEST);
+        sidebar.add(headerPanel, BorderLayout.NORTH);
+        sidebar.add(navPanel, BorderLayout.CENTER);
 
-        // ===== Main Content Panel =====
-        JPanel contentPanel = new JPanel(new BorderLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                if (backgroundImage != null) {
-                    g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+        add(sidebar, BorderLayout.WEST);
+    }
+
+    private JButton createNavButton(String text, String icon) {
+        JButton button = new JButton(icon + "  " + text);
+        button.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        button.setBackground(SECONDARY_COLOR);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(12, 15, 12, 15));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                if (button.isEnabled()) {
+                    button.setBackground(ACCENT_COLOR);
                 }
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                if (button.isEnabled()) {
+                    button.setBackground(SECONDARY_COLOR);
+                }
+            }
+        });
+
+        return button;
+    }
+
+    private void setupMainContent() {
+        contentPanel = new GradientPanel(BACKGROUND_COLOR, new Color(230, 230, 255));
+        contentPanel.setLayout(new BorderLayout(10, 10));
+        contentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JPanel headerPanel = createHeaderPanel();
+        contentPanel.add(headerPanel, BorderLayout.NORTH);
+
+        JPanel tablePanel = createTablePanel();
+        contentPanel.add(tablePanel, BorderLayout.CENTER);
+
+        JPanel actionPanel = createActionPanel();
+        contentPanel.add(actionPanel, BorderLayout.SOUTH);
+
+        add(contentPanel, BorderLayout.CENTER);
+    }
+
+    private JPanel createHeaderPanel() {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+
+        JLabel welcomeLabel = new JLabel("Welcome back, " + loggedInUser.getUsername() + "!");
+        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        welcomeLabel.setForeground(PRIMARY_COLOR);
+
+        JPanel statsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        statsPanel.setOpaque(false);
+
+        String[][] statsData = {
+                {"Total Products", "📦", "50"},
+                {"Low Stock", "⚠", "5"},
+                {"Today's Sales", "💰", "$1,250"}
+        };
+
+        for (String[] stat : statsData) {
+            statsPanel.add(createStatCard(stat[0], stat[1], stat[2]));
+        }
+
+        headerPanel.add(welcomeLabel, BorderLayout.NORTH);
+        headerPanel.add(statsPanel, BorderLayout.SOUTH);
+
+        return headerPanel;
+    }
+
+    private JPanel createStatCard(String title, String icon, String value) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout());
+        card.setBackground(CARD_COLOR);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(240, 240, 240), 1),
+                new EmptyBorder(15, 20, 15, 20)
+        ));
+        card.setPreferredSize(new Dimension(180, 80));
+
+        JLabel titleLabel = new JLabel(icon + " " + title);
+        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        titleLabel.setForeground(Color.GRAY);
+
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        valueLabel.setForeground(PRIMARY_COLOR);
+
+        card.add(titleLabel, BorderLayout.NORTH);
+        card.add(valueLabel, BorderLayout.CENTER);
+
+        return card;
+    }
+
+    private JPanel createTablePanel() {
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setOpaque(false);
+        tablePanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
+                "Product Inventory",
+                0, 0,
+                new Font("Segoe UI", Font.BOLD, 16),
+                PRIMARY_COLOR
+        ));
+
+        productTable = new JTable(new DefaultTableModel(
+                new Object[]{"ID", "Name", "Description", "Price", "Stock", "Status"}, 0
+        )) {
+            @Override
+            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
+                Component c = super.prepareRenderer(renderer, row, column);
+                if (isRowSelected(row)) {
+                    c.setBackground(new Color(147, 112, 219, 100));
+                } else {
+                    c.setBackground(row % 2 == 0 ? new Color(250, 250, 255) : Color.WHITE);
+                }
+                return c;
             }
         };
 
-        // Product Table
-        productTable = new JTable(new DefaultTableModel(
-                new Object[]{"ID", "Name", "Description", "Price", "Stock"}, 0
-        ));
+        JTableHeader header = productTable.getTableHeader();
+        header.setBackground(PRIMARY_COLOR);
+        header.setForeground(Color.WHITE);
+        header.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        productTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        productTable.setRowHeight(30);
+        productTable.setSelectionBackground(new Color(147, 112, 219, 100));
+        productTable.setSelectionForeground(PRIMARY_COLOR);
+        productTable.setGridColor(new Color(240, 240, 240));
+
         JScrollPane scrollPane = new JScrollPane(productTable);
-        contentPanel.add(scrollPane, BorderLayout.CENTER);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getViewport().setBackground(Color.WHITE);
 
-        // Buttons Panel
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setOpaque(false);
+        tablePanel.add(scrollPane, BorderLayout.CENTER);
+        return tablePanel;
+    }
 
-        JButton addBtn = new JButton("Add Product");
-        JButton updateBtn = new JButton("Add Stock");
-        JButton deleteBtn = new JButton("Delete Product");
-        JButton sellBtn = new JButton("Sell Product");
-        JButton printBtn = new JButton("🖨 Print Products");
-        JButton backBtn = new JButton("⬅ Back");
+    private JPanel createActionPanel() {
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        actionPanel.setOpaque(false);
+        actionPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
 
-        if ("cashier".equalsIgnoreCase(user.getRole())) {
-            addBtn.setEnabled(false);
-            updateBtn.setEnabled(false);
-            deleteBtn.setEnabled(false);
-            btnProducts.setEnabled(false);
+        addProductBtn = createActionButton("➕ Add Product", PRIMARY_COLOR);
+        addStockBtn = createActionButton("📥 Add Stock", SECONDARY_COLOR);
+        deleteBtn = createActionButton("🗑️ Delete", new Color(220, 53, 69));
+        sellBtn = createActionButton("💰 Sell", new Color(40, 167, 69));
+        printBtn = createActionButton("🖨️ Print", new Color(108, 117, 125));
+        backBtn = createActionButton("⬅️ Back", new Color(253, 126, 20));
+
+        JButton[] actionButtons = {addProductBtn, addStockBtn, deleteBtn, sellBtn, printBtn, backBtn};
+
+        for (JButton button : actionButtons) {
+            actionPanel.add(button);
+
+            if ("cashier".equalsIgnoreCase(loggedInUser.getRole()) &&
+                    (button == addProductBtn || button == addStockBtn || button == deleteBtn)) {
+                button.setEnabled(false);
+                button.setBackground(Color.GRAY);
+            }
         }
 
-        buttonPanel.add(addBtn);
-        buttonPanel.add(updateBtn);
-        buttonPanel.add(deleteBtn);
-        buttonPanel.add(sellBtn);
-        buttonPanel.add(printBtn);
-        buttonPanel.add(backBtn);
+        return actionPanel;
+    }
 
-        contentPanel.add(buttonPanel, BorderLayout.SOUTH);
-        add(contentPanel, BorderLayout.CENTER);
+    private JButton createActionButton(String text, Color color) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBorder(new RoundedBorder(20, color));
 
-        // ===== Load Data =====
-        refreshTable();
-
-        // ===== Actions =====
-        addBtn.addActionListener(e -> {
-            String name = JOptionPane.showInputDialog(this, "Enter Product Name:");
-            String desc = JOptionPane.showInputDialog(this, "Enter Description:");
-            double price = Double.parseDouble(JOptionPane.showInputDialog(this, "Enter Price:"));
-            int stock = Integer.parseInt(JOptionPane.showInputDialog(this, "Enter Stock:"));
-
-            if (ProductDAO.addProduct(name, desc, price, stock)) {
-                JOptionPane.showMessageDialog(this, "Product Added!");
-                refreshTable();
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                if (button.isEnabled()) {
+                    button.setBackground(color.darker());
+                }
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                if (button.isEnabled()) {
+                    button.setBackground(color);
+                }
             }
         });
 
-        //  Increment stock instead of overwrite
-        updateBtn.addActionListener(e -> {
+        return button;
+    }
+
+    private void loadData() {
+        refreshTable();
+    }
+
+    private void setupActions() {
+        // Add Product Button
+        addProductBtn.addActionListener(e -> openAddProductFrame());
+
+        // Add Stock Button
+        addStockBtn.addActionListener(e -> {
             int row = productTable.getSelectedRow();
-            if (row >= 0) {
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a product first!");
+                return;
+            }
+
+            try {
                 int id = (int) productTable.getValueAt(row, 0);
-                int qty = Integer.parseInt(JOptionPane.showInputDialog(this, "Enter quantity to add:"));
+                String qtyStr = JOptionPane.showInputDialog(this, "Enter quantity to add:");
+                if (qtyStr == null) return;
+                int qty = Integer.parseInt(qtyStr);
+
+                if (qty <= 0) {
+                    JOptionPane.showMessageDialog(this, "Quantity must be positive!");
+                    return;
+                }
+
                 if (ProductDAO.addStock(id, qty)) {
                     JOptionPane.showMessageDialog(this, "Stock increased by " + qty);
                     refreshTable();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to add stock!");
                 }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid quantity!");
             }
         });
 
+        // Delete Product Button
         deleteBtn.addActionListener(e -> {
             int row = productTable.getSelectedRow();
-            if (row >= 0) {
-                int id = (int) productTable.getValueAt(row, 0);
-                if (ProductDAO.deleteProduct(id)) {
-                    JOptionPane.showMessageDialog(this, "Product Deleted!");
-                    refreshTable();
-                }
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a product first!");
+                return;
             }
-        });
 
-        sellBtn.addActionListener(e -> {
-            int row = productTable.getSelectedRow();
-            if (row >= 0) {
-                int id = (int) productTable.getValueAt(row, 0);
-                int qty = Integer.parseInt(JOptionPane.showInputDialog(this, "Enter Quantity Sold:"));
-                if (ProductDAO.recordSale(id, qty)) {
-                    JOptionPane.showMessageDialog(this, "Sale Recorded!");
+            int id = (int) productTable.getValueAt(row, 0);
+            String productName = (String) productTable.getValueAt(row, 1);
+
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to delete '" + productName + "'?",
+                    "Confirm Delete", JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                if (ProductDAO.deleteProduct(id)) {
+                    JOptionPane.showMessageDialog(this, "Product Deleted Successfully!");
                     refreshTable();
                 } else {
-                    JOptionPane.showMessageDialog(this, "Not enough stock!");
+                    JOptionPane.showMessageDialog(this, "Failed to delete product!");
                 }
             }
         });
 
-        //  Print products directly
+        // Sell Product Button
+        sellBtn.addActionListener(e -> {
+            int row = productTable.getSelectedRow();
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a product first!");
+                return;
+            }
+
+            try {
+                int id = (int) productTable.getValueAt(row, 0);
+                String productName = (String) productTable.getValueAt(row, 1);
+                int currentStock = (int) productTable.getValueAt(row, 4);
+
+                String qtyStr = JOptionPane.showInputDialog(this,
+                        "Sell '" + productName + "'\nCurrent stock: " + currentStock + "\nEnter quantity to sell:");
+                if (qtyStr == null) return;
+
+                int qty = Integer.parseInt(qtyStr);
+
+                if (qty <= 0) {
+                    JOptionPane.showMessageDialog(this, "Quantity must be positive!");
+                    return;
+                }
+
+                if (qty > currentStock) {
+                    JOptionPane.showMessageDialog(this, "Not enough stock! Available: " + currentStock);
+                    return;
+                }
+
+                if (ProductDAO.recordSale(id, qty)) {
+                    JOptionPane.showMessageDialog(this, "Sale Recorded Successfully!");
+                    refreshTable();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to record sale!");
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid quantity!");
+            }
+        });
+
+        // Print Button
         printBtn.addActionListener(e -> {
             try {
                 boolean complete = productTable.print();
                 if (complete) {
-                    JOptionPane.showMessageDialog(this, "Printing complete!");
+                    JOptionPane.showMessageDialog(this, "Printing completed successfully!");
                 } else {
-                    JOptionPane.showMessageDialog(this, "Printing canceled.");
+                    JOptionPane.showMessageDialog(this, "Printing was cancelled.");
                 }
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error while printing: " + ex.getMessage());
             }
         });
 
-        btnProducts.addActionListener(e -> new ProductFrame().setVisible(true));
-        btnCustomers.addActionListener(e -> new CustomerFrame().setVisible(true));
+        // Back Button
         backBtn.addActionListener(e -> {
-            this.dispose();
-            new LoginFrame().setVisible(true);
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to go back to login?",
+                    "Confirm Logout", JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                this.dispose();
+                new LoginFrame().setVisible(true);
+            }
         });
+
+        // ✅ Manage Products Button
+        btnProducts.addActionListener(e -> openProductManagement());
+
+        // ✅ Manage Customers Button - Opens CustomerFrame directly
+        btnCustomers.addActionListener(e -> openCustomerFrame());
+
+        // Logout Button
         btnLogout.addActionListener(e -> {
-            this.dispose();
-            new LoginFrame().setVisible(true);
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Are you sure you want to logout?",
+                    "Confirm Logout", JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                this.dispose();
+                new LoginFrame().setVisible(true);
+            }
         });
+
+        // Placeholder for other buttons
+        btnDashboard.addActionListener(e -> showMessage("Dashboard feature coming soon!"));
+        btnSales.addActionListener(e -> showMessage("Sales feature coming soon!"));
+        btnReports.addActionListener(e -> showMessage("Reports feature coming soon!"));
+        btnSettings.addActionListener(e -> showMessage("Settings feature coming soon!"));
+    }
+
+    // ✅ METHOD: Open product management options
+    private void openProductManagement() {
+        String[] options = {"➕ Add New Product", "📋 View All Products", "❌ Cancel"};
+
+        int choice = JOptionPane.showOptionDialog(this,
+                "Product Management Options",
+                "Manage Products",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        switch (choice) {
+            case 0: // Add New Product
+                openAddProductFrame();
+                break;
+            case 1: // View All Products
+                refreshTable();
+                JOptionPane.showMessageDialog(this, "Product list refreshed!");
+                break;
+            // case 2: Cancel - do nothing
+        }
+    }
+
+    // ✅ METHOD: Open CustomerFrame directly
+    private void openCustomerFrame() {
+        CustomerFrame customerFrame = new CustomerFrame();
+        customerFrame.setLocationRelativeTo(this);
+        customerFrame.setVisible(true);
+    }
+
+    // ✅ METHOD: Open the Add Product Frame
+    private void openAddProductFrame() {
+        AddProductFrame addProductFrame = new AddProductFrame();
+        addProductFrame.setLocationRelativeTo(this);
+        addProductFrame.setVisible(true);
+        refreshTable();
+    }
+
+    private void showMessage(String message) {
+        JOptionPane.showMessageDialog(this, message);
     }
 
     private void refreshTable() {
-        List<Product> products = ProductDAO.getAllProducts();
-        DefaultTableModel model = (DefaultTableModel) productTable.getModel();
-        model.setRowCount(0);
-        for (Product p : products) {
-            model.addRow(new Object[]{
-                    p.getId(),
-                    p.getName(),
-                    p.getDescription(),
-                    p.getPrice(),
-                    p.getStock()
-            });
+        try {
+            List<Product> products = ProductDAO.getAllProducts();
+            DefaultTableModel model = (DefaultTableModel) productTable.getModel();
+            model.setRowCount(0);
+            for (Product p : products) {
+                String status = p.getStock() > 10 ? "🟢 In Stock" : p.getStock() > 0 ? "🟡 Low Stock" : "🔴 Out of Stock";
+                model.addRow(new Object[]{
+                        p.getId(),
+                        p.getName(),
+                        p.getDescription(),
+                        String.format("$%.2f", p.getPrice()),
+                        p.getStock(),
+                        status
+                });
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading products: " + e.getMessage());
+        }
+    }
+
+    // Custom gradient panel
+    class GradientPanel extends JPanel {
+        private Color startColor;
+        private Color endColor;
+
+        public GradientPanel(Color startColor, Color endColor) {
+            this.startColor = startColor;
+            this.endColor = endColor;
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            GradientPaint gp = new GradientPaint(0, 0, startColor, getWidth(), getHeight(), endColor);
+            g2d.setPaint(gp);
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+        }
+    }
+
+    // Rounded border for buttons
+    class RoundedBorder implements javax.swing.border.Border {
+        private int radius;
+        private Color color;
+
+        RoundedBorder(int radius, Color color) {
+            this.radius = radius;
+            this.color = color;
+        }
+
+        public Insets getBorderInsets(Component c) {
+            return new Insets(this.radius+1, this.radius+1, this.radius+2, this.radius);
+        }
+
+        public boolean isBorderOpaque() {
+            return true;
+        }
+
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            g2.draw(new RoundRectangle2D.Float(x, y, width-1, height-1, radius, radius));
         }
     }
 }
-
