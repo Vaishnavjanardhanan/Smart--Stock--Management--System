@@ -4,12 +4,6 @@ import main.DBConnection;
 import java.sql.*;
 
 public class UserDAO {
-   package model;
-
-import main.DBConnection;
-import java.sql.*;
-
-public class UserDAO {
 
     //  Authenticate user (login)
     public User authenticate(String username, String password) {
@@ -33,7 +27,7 @@ public class UserDAO {
         return null;
     }
 
-    //  Add a new user (for registration)
+    //Add a new user (for registration)
     public static boolean addUser(String username, String password, String role) {
         String sql = "INSERT INTO users(username, password, role) VALUES (?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
@@ -63,6 +57,3 @@ public class UserDAO {
         }
     }
 }
-
-
-
