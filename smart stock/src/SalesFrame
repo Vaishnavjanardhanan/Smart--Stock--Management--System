@@ -1,0 +1,329 @@
+package view;
+
+import model.CustomerDAO;
+import model.ProductDAO;
+import model.SaleDAO;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.List;
+
+public class SalesFrame extends JFrame {
+    private JTable salesTable;
+    private JComboBox<String> productComboBox;
+    private JComboBox<String> customerComboBox;
+    private JTextField quantityField;
+    private JTextField priceField;
+    private JLabel totalLabel;
+
+    public SalesFrame() {
+        initializeUI();
+        setupComponents();
+        loadSalesData();
+        setupActions();
+    }
+
+    private void initializeUI() {
+        setTitle("Smart Stock - Sales Management");
+        setSize(1000, 700);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(10, 10));
+        getContentPane().setBackground(new Color(245, 245, 255));
+    }
+
+    private void setupComponents() {
+        // Header
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(Color.WHITE);
+        headerPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
+
+        JLabel titleLabel = new JLabel("Sales Management");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setForeground(new Color(102, 0, 153));
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+
+        JButton refreshBtn = new JButton("🔄 Refresh");
+        refreshBtn.setBackground(new Color(102, 0, 153));
+        refreshBtn.setForeground(Color.WHITE);
+        refreshBtn.setFocusPainted(false);
+        refreshBtn.addActionListener(e -> loadSalesData());
+        headerPanel.add(refreshBtn, BorderLayout.EAST);
+
+        add(headerPanel, BorderLayout.NORTH);
+
+        // Sales Form Panel
+        JPanel formPanel = createSalesForm();
+        add(formPanel, BorderLayout.WEST);
+
+        // Sales Table Panel
+        JPanel tablePanel = createSalesTable();
+        add(tablePanel, BorderLayout.CENTER);
+    }
+
+    private JPanel createSalesForm() {
+        JPanel formPanel = new JPanel();
+        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
+        formPanel.setBackground(Color.WHITE);
+        formPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                new EmptyBorder(20, 20, 20, 20)
+        ));
+        formPanel.setPreferredSize(new Dimension(300, getHeight()));
+
+        JLabel formTitle = new JLabel("New Sale");
+        formTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        formTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(formTitle);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        // Product Selection
+        formPanel.add(createLabel("Product:"));
+        productComboBox = new JComboBox<>();
+        productComboBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(productComboBox);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        // Customer Selection
+        formPanel.add(createLabel("Customer:"));
+        customerComboBox = new JComboBox<>();
+        customerComboBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(customerComboBox);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        // Quantity
+        formPanel.add(createLabel("Quantity:"));
+        quantityField = new JTextField();
+        quantityField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        quantityField.setMaximumSize(new Dimension(250, 30));
+        formPanel.add(quantityField);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        // Price
+        formPanel.add(createLabel("Unit Price:"));
+        priceField = new JTextField();
+        priceField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        priceField.setMaximumSize(new Dimension(250, 30));
+        priceField.setEditable(false);
+        formPanel.add(priceField);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        // Total
+        formPanel.add(createLabel("Total Amount:"));
+        totalLabel = new JLabel("$0.00");
+        totalLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        totalLabel.setForeground(new Color(102, 0, 153));
+        totalLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        formPanel.add(totalLabel);
+        formPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        // Buttons
+        JButton sellBtn = createButton("💰 Process Sale", new Color(40, 167, 69));
+        sellBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        sellBtn.addActionListener(e -> processSale());
+        formPanel.add(sellBtn);
+
+        JButton clearBtn = createButton("🗑️ Clear", new Color(108, 117, 125));
+        clearBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        clearBtn.addActionListener(e -> clearForm());
+        formPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        formPanel.add(clearBtn);
+
+        loadFormData();
+        setupFormListeners();
+
+        return formPanel;
+    }
+
+    private JLabel createLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return label;
+    }
+
+    private JButton createButton(String text, Color color) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setBorder(new EmptyBorder(10, 15, 10, 15));
+        button.setMaximumSize(new Dimension(250, 40));
+        return button;
+    }
+
+    private JPanel createSalesTable() {
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setBackground(Color.WHITE);
+        tablePanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        String[] columns = {"Sale ID", "Product", "Customer", "Quantity", "Unit Price", "Total Amount", "Sale Date"};
+        DefaultTableModel model = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        salesTable = new JTable(model);
+        salesTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        salesTable.setRowHeight(30);
+        salesTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        salesTable.getTableHeader().setBackground(new Color(102, 0, 153));
+        salesTable.getTableHeader().setForeground(Color.WHITE);
+
+        JScrollPane scrollPane = new JScrollPane(salesTable);
+        tablePanel.add(scrollPane, BorderLayout.CENTER);
+
+        return tablePanel;
+    }
+
+    private void loadFormData() {
+        try {
+            // Load products
+            productComboBox.removeAllItems();
+            productComboBox.addItem("Select Product");
+            var products = ProductDAO.getAllProducts();
+            for (var product : products) {
+                productComboBox.addItem(product.getName() + " (Stock: " + product.getStock() + ")");
+            }
+
+            // Load customers
+            customerComboBox.removeAllItems();
+            customerComboBox.addItem("Walk-in Customer");
+            var customers = CustomerDAO.getAllCustomers();
+            for (var customer : customers) {
+                customerComboBox.addItem(customer.getName() + " (" + customer.getEmail() + ")");
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading data: " + e.getMessage());
+        }
+    }
+
+    private void setupFormListeners() {
+        productComboBox.addActionListener(e -> updatePrice());
+        quantityField.addActionListener(e -> calculateTotal());
+    }
+
+    private void updatePrice() {
+        try {
+            int selectedIndex = productComboBox.getSelectedIndex();
+            if (selectedIndex > 0) {
+                var products = ProductDAO.getAllProducts();
+                var product = products.get(selectedIndex - 1);
+                priceField.setText(String.format("$%.2f", product.getPrice()));
+                calculateTotal();
+            } else {
+                priceField.setText("");
+                totalLabel.setText("$0.00");
+            }
+        } catch (Exception e) {
+            priceField.setText("");
+        }
+    }
+
+    private void calculateTotal() {
+        try {
+            if (!priceField.getText().isEmpty() && !quantityField.getText().isEmpty()) {
+                double price = Double.parseDouble(priceField.getText().replace("$", ""));
+                int quantity = Integer.parseInt(quantityField.getText());
+                double total = price * quantity;
+                totalLabel.setText(String.format("$%.2f", total));
+            }
+        } catch (NumberFormatException e) {
+            totalLabel.setText("$0.00");
+        }
+    }
+
+    private void processSale() {
+        try {
+            int productIndex = productComboBox.getSelectedIndex();
+            if (productIndex <= 0) {
+                JOptionPane.showMessageDialog(this, "Please select a product!");
+                return;
+            }
+
+            if (quantityField.getText().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter quantity!");
+                return;
+            }
+
+            int quantity = Integer.parseInt(quantityField.getText());
+            if (quantity <= 0) {
+                JOptionPane.showMessageDialog(this, "Quantity must be positive!");
+                return;
+            }
+
+            // Get selected product
+            var products = ProductDAO.getAllProducts();
+            var product = products.get(productIndex - 1);
+
+            // Check stock
+            if (quantity > product.getStock()) {
+                JOptionPane.showMessageDialog(this,
+                        "Insufficient stock! Available: " + product.getStock());
+                return;
+            }
+
+            // Get customer (if selected)
+            Integer customerId = null;
+            int customerIndex = customerComboBox.getSelectedIndex();
+            if (customerIndex > 0) {
+                var customers = CustomerDAO.getAllCustomers();
+                customerId = customers.get(customerIndex - 1).getId();
+            }
+
+            // Process sale
+            if (SaleDAO.recordSale(product.getId(), quantity, customerId)) {
+                JOptionPane.showMessageDialog(this, "Sale recorded successfully!");
+                clearForm();
+                loadSalesData();
+                loadFormData(); // Refresh product stock info
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to record sale!");
+            }
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        }
+    }
+
+    private void clearForm() {
+        productComboBox.setSelectedIndex(0);
+        customerComboBox.setSelectedIndex(0);
+        quantityField.setText("");
+        priceField.setText("");
+        totalLabel.setText("$0.00");
+    }
+
+    private void loadSalesData() {
+        try {
+            var sales = SaleDAO.getAllSales();
+            DefaultTableModel model = (DefaultTableModel) salesTable.getModel();
+            model.setRowCount(0);
+
+            for (var sale : sales) {
+                model.addRow(new Object[]{
+                        sale.getSaleId(),
+                        sale.getProductName(),
+                        sale.getCustomerName(),
+                        sale.getQuantitySold(),
+                        String.format("$%.2f", sale.getUnitPrice()),
+                        String.format("$%.2f", sale.getTotalAmount()),
+                        sale.getSaleDate()
+                });
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading sales data: " + e.getMessage());
+        }
+    }
+
+    private void setupActions() {
+        // Add any additional actions here
+    }
+        }
