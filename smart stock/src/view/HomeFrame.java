@@ -1,9 +1,6 @@
 package view;
 
-import model.Product;
-import model.ProductDAO;
-import model.User;
-
+import model.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -11,16 +8,18 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
+import java.sql.Connection;
 import java.util.List;
 
 public class HomeFrame extends JFrame {
     private JTable productTable;
     private User loggedInUser;
     private GradientPanel contentPanel;
+    private Connection databaseConnection;
 
     // Declare buttons as instance variables
     private JButton addProductBtn, addStockBtn, deleteBtn, sellBtn, printBtn, backBtn;
-    private JButton btnDashboard, btnProducts, btnCustomers, btnSales, btnReports, btnSettings, btnLogout;
+    private JButton btnLoginHistory, btnProducts, btnCustomers, btnSales, btnReports, btnSettings, btnLogout;
 
     // Color scheme
     private final Color PRIMARY_COLOR = new Color(102, 0, 153);
@@ -29,13 +28,17 @@ public class HomeFrame extends JFrame {
     private final Color BACKGROUND_COLOR = new Color(245, 245, 255);
     private final Color CARD_COLOR = Color.WHITE;
 
-    public HomeFrame(User user) {
+    public HomeFrame(User user, Connection connection) {
         this.loggedInUser = user;
+        this.databaseConnection = connection;
         initializeUI();
         setupSidebar();
         setupMainContent();
         loadData();
         setupActions();
+
+        // Record login when home frame opens
+        LoginHistoryDAO.recordLogin(loggedInUser.getUsername());
     }
 
     private void initializeUI() {
@@ -44,6 +47,14 @@ public class HomeFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+
+        // Add window listener to record logout when window closes
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                LoginHistoryDAO.recordLogout(loggedInUser.getUsername());
+            }
+        });
     }
 
     private void setupSidebar() {
@@ -76,7 +87,7 @@ public class HomeFrame extends JFrame {
         navPanel.setBorder(new EmptyBorder(20, 0, 20, 0));
 
         // Create sidebar buttons
-        btnDashboard = createNavButton("Dashboard", "📊");
+        btnLoginHistory = createNavButton("Login History", "📋");
         btnProducts = createNavButton("Manage Products", "📦");
         btnCustomers = createNavButton("Manage Customers", "👥");
         btnSales = createNavButton("Sales", "💰");
@@ -84,16 +95,19 @@ public class HomeFrame extends JFrame {
         btnSettings = createNavButton("Settings", "⚙");
         btnLogout = createNavButton("Logout", "🚪");
 
-        JButton[] navButtons = {btnDashboard, btnProducts, btnCustomers, btnSales, btnReports, btnSettings, btnLogout};
+        JButton[] navButtons = {btnLoginHistory, btnProducts, btnCustomers, btnSales, btnReports, btnSettings, btnLogout};
 
         for (JButton button : navButtons) {
             navPanel.add(button);
 
             // Disable certain features for cashier
             if ("cashier".equalsIgnoreCase(loggedInUser.getRole()) &&
-                    (button.getText().contains("Manage Products") || button.getText().contains("Reports"))) {
+                    (button.getText().contains("Manage Products") ||
+                            button.getText().contains("Reports") ||
+                            button.getText().contains("Settings"))) {
                 button.setEnabled(false);
                 button.setBackground(new Color(100, 100, 100));
+                button.setToolTipText("Admin access required");
             }
         }
 
@@ -111,6 +125,7 @@ public class HomeFrame extends JFrame {
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createEmptyBorder(12, 15, 12, 15));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setHorizontalAlignment(SwingConstants.LEFT);
 
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -156,20 +171,68 @@ public class HomeFrame extends JFrame {
         JPanel statsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
         statsPanel.setOpaque(false);
 
-        String[][] statsData = {
-                {"Total Products", "📦", "50"},
-                {"Low Stock", "⚠", "5"},
-                {"Today's Sales", "💰", "$1,250"}
-        };
+        // Updated stats with real data
+        try {
+            int totalProducts = ProductDAO.getAllProducts().size();
+            int lowStockCount = getLowStockCount();
+            double todaySales = getTodaySales();
 
-        for (String[] stat : statsData) {
-            statsPanel.add(createStatCard(stat[0], stat[1], stat[2]));
+            String[][] statsData = {
+                    {"Total Products", "📦", String.valueOf(totalProducts)},
+                    {"Low Stock", "⚠", String.valueOf(lowStockCount)},
+                    {"Today's Sales", "💰", String.format("%.2f", todaySales)}
+            };
+
+            for (String[] stat : statsData) {
+                statsPanel.add(createStatCard(stat[0], stat[1], stat[2]));
+            }
+        } catch (Exception e) {
+            // Fallback stats if there's an error
+            String[][] statsData = {
+                    {"Total Products", "📦", "0"},
+                    {"Low Stock", "⚠", "0"},
+                    {"Today's Sales", "💰", "0.00"}
+            };
+
+            for (String[] stat : statsData) {
+                statsPanel.add(createStatCard(stat[0], stat[1], stat[2]));
+            }
         }
 
         headerPanel.add(welcomeLabel, BorderLayout.NORTH);
         headerPanel.add(statsPanel, BorderLayout.SOUTH);
 
         return headerPanel;
+    }
+
+    private int getLowStockCount() throws Exception {
+        List<Product> products = ProductDAO.getAllProducts();
+        int count = 0;
+        for (Product product : products) {
+            if (product.getStock() > 0 && product.getStock() <= 10) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private double getTodaySales() throws Exception {
+        List<Sale> sales = SaleDAO.getAllSales();
+        double total = 0;
+        java.util.Date today = new java.util.Date();
+        for (Sale sale : sales) {
+            if (isToday(sale.getSaleDate())) {
+                total += sale.getTotalAmount();
+            }
+        }
+        return total;
+    }
+
+    private boolean isToday(java.sql.Timestamp timestamp) {
+        java.util.Date date = new java.util.Date(timestamp.getTime());
+        java.util.Date today = new java.util.Date();
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyyMMdd");
+        return sdf.format(date).equals(sdf.format(today));
     }
 
     private JPanel createStatCard(String title, String icon, String value) {
@@ -248,7 +311,7 @@ public class HomeFrame extends JFrame {
 
         addProductBtn = createActionButton("➕ Add Product", PRIMARY_COLOR);
         addStockBtn = createActionButton("📥 Add Stock", SECONDARY_COLOR);
-        deleteBtn = createActionButton("🗑️ Delete", new Color(220, 53, 69));
+        deleteBtn = createActionButton("🗑️ Delete", new Color(154, 8, 19));
         sellBtn = createActionButton("💰 Sell", new Color(40, 167, 69));
         printBtn = createActionButton("🖨️ Print", new Color(108, 117, 125));
         backBtn = createActionButton("⬅️ Back", new Color(253, 126, 20));
@@ -262,6 +325,7 @@ public class HomeFrame extends JFrame {
                     (button == addProductBtn || button == addStockBtn || button == deleteBtn)) {
                 button.setEnabled(false);
                 button.setBackground(Color.GRAY);
+                button.setToolTipText("Admin access required");
             }
         }
 
@@ -324,6 +388,7 @@ public class HomeFrame extends JFrame {
                 if (ProductDAO.addStock(id, qty)) {
                     JOptionPane.showMessageDialog(this, "Stock increased by " + qty);
                     refreshTable();
+                    refreshStats();
                 } else {
                     JOptionPane.showMessageDialog(this, "Failed to add stock!");
                 }
@@ -351,6 +416,7 @@ public class HomeFrame extends JFrame {
                 if (ProductDAO.deleteProduct(id)) {
                     JOptionPane.showMessageDialog(this, "Product Deleted Successfully!");
                     refreshTable();
+                    refreshStats();
                 } else {
                     JOptionPane.showMessageDialog(this, "Failed to delete product!");
                 }
@@ -389,6 +455,7 @@ public class HomeFrame extends JFrame {
                 if (ProductDAO.recordSale(id, qty)) {
                     JOptionPane.showMessageDialog(this, "Sale Recorded Successfully!");
                     refreshTable();
+                    refreshStats();
                 } else {
                     JOptionPane.showMessageDialog(this, "Failed to record sale!");
                 }
@@ -412,43 +479,73 @@ public class HomeFrame extends JFrame {
         });
 
         // Back Button
-        backBtn.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "Are you sure you want to go back to login?",
-                    "Confirm Logout", JOptionPane.YES_NO_OPTION);
+        backBtn.addActionListener(e -> logout());
 
-            if (confirm == JOptionPane.YES_OPTION) {
-                this.dispose();
-                new LoginFrame().setVisible(true);
-            }
-        });
-
-        // ✅ Manage Products Button
+        // Navigation Buttons
+        btnLoginHistory.addActionListener(e -> openLoginHistoryFrame());
         btnProducts.addActionListener(e -> openProductManagement());
-
-        // ✅ Manage Customers Button - Opens CustomerFrame directly
         btnCustomers.addActionListener(e -> openCustomerFrame());
+        btnSales.addActionListener(e -> openSalesFrame());
+        btnReports.addActionListener(e -> openReportsFrame());
 
-        // Logout Button
-        btnLogout.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "Are you sure you want to logout?",
-                    "Confirm Logout", JOptionPane.YES_NO_OPTION);
+        // ✅ UPDATED: Settings Button now opens SettingsFrame
+        btnSettings.addActionListener(e -> openSettingsFrame());
 
-            if (confirm == JOptionPane.YES_OPTION) {
-                this.dispose();
-                new LoginFrame().setVisible(true);
-            }
-        });
-
-        // Placeholder for other buttons
-        btnDashboard.addActionListener(e -> showMessage("Dashboard feature coming soon!"));
-        btnSales.addActionListener(e -> showMessage("Sales feature coming soon!"));
-        btnReports.addActionListener(e -> showMessage("Reports feature coming soon!"));
-        btnSettings.addActionListener(e -> showMessage("Settings feature coming soon!"));
+        btnLogout.addActionListener(e -> logout());
     }
 
-    // ✅ METHOD: Open product management options
+    // ✅ NEW METHOD: Open Settings Frame
+    private void openSettingsFrame() {
+        if (!"ADMIN".equalsIgnoreCase(loggedInUser.getRole())) {
+            JOptionPane.showMessageDialog(this,
+                    "Access Denied!\nOnly administrators can access settings.",
+                    "Admin Access Required",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            SettingsFrame settingsFrame = new SettingsFrame(databaseConnection, loggedInUser.getUsername());
+            settingsFrame.setLocationRelativeTo(this);
+            settingsFrame.setVisible(true);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error opening settings: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void logout() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to logout?",
+                "Confirm Logout", JOptionPane.YES_NO_OPTION);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            LoginHistoryDAO.recordLogout(loggedInUser.getUsername());
+            this.dispose();
+            new LoginFrame().setVisible(true);
+        }
+    }
+
+    private void openLoginHistoryFrame() {
+        LoginHistoryFrame historyFrame = new LoginHistoryFrame();
+        historyFrame.setLocationRelativeTo(this);
+        historyFrame.setVisible(true);
+    }
+
+    private void openSalesFrame() {
+        SalesFrame salesFrame = new SalesFrame();
+        salesFrame.setLocationRelativeTo(this);
+        salesFrame.setVisible(true);
+    }
+
+    private void openReportsFrame() {
+        ReportsFrame reportsFrame = new ReportsFrame();
+        reportsFrame.setLocationRelativeTo(this);
+        reportsFrame.setVisible(true);
+    }
+
     private void openProductManagement() {
         String[] options = {"➕ Add New Product", "📋 View All Products", "❌ Cancel"};
 
@@ -462,34 +559,28 @@ public class HomeFrame extends JFrame {
                 options[0]);
 
         switch (choice) {
-            case 0: // Add New Product
+            case 0:
                 openAddProductFrame();
                 break;
-            case 1: // View All Products
+            case 1:
                 refreshTable();
                 JOptionPane.showMessageDialog(this, "Product list refreshed!");
                 break;
-            // case 2: Cancel - do nothing
         }
     }
 
-    // ✅ METHOD: Open CustomerFrame directly
     private void openCustomerFrame() {
         CustomerFrame customerFrame = new CustomerFrame();
         customerFrame.setLocationRelativeTo(this);
         customerFrame.setVisible(true);
     }
 
-    // ✅ METHOD: Open the Add Product Frame
     private void openAddProductFrame() {
         AddProductFrame addProductFrame = new AddProductFrame();
         addProductFrame.setLocationRelativeTo(this);
         addProductFrame.setVisible(true);
         refreshTable();
-    }
-
-    private void showMessage(String message) {
-        JOptionPane.showMessageDialog(this, message);
+        refreshStats();
     }
 
     private void refreshTable() {
@@ -503,7 +594,7 @@ public class HomeFrame extends JFrame {
                         p.getId(),
                         p.getName(),
                         p.getDescription(),
-                        String.format("$%.2f", p.getPrice()),
+                        String.format("%.2f", p.getPrice()),
                         p.getStock(),
                         status
                 });
@@ -511,6 +602,13 @@ public class HomeFrame extends JFrame {
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading products: " + e.getMessage());
         }
+    }
+
+    private void refreshStats() {
+        contentPanel.removeAll();
+        setupMainContent();
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     // Custom gradient panel
