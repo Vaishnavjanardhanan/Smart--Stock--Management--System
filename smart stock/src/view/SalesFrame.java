@@ -114,7 +114,7 @@ public class SalesFrame extends JFrame {
 
         // Total
         formPanel.add(createLabel("Total Amount:"));
-        totalLabel = new JLabel("$0.00");
+        totalLabel = new JLabel("0.00");
         totalLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         totalLabel.setForeground(new Color(102, 0, 153));
         totalLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -216,11 +216,11 @@ public class SalesFrame extends JFrame {
             if (selectedIndex > 0) {
                 var products = ProductDAO.getAllProducts();
                 var product = products.get(selectedIndex - 1);
-                priceField.setText(String.format("$%.2f", product.getPrice()));
+                priceField.setText(String.format("%.2f", product.getPrice()));
                 calculateTotal();
             } else {
                 priceField.setText("");
-                totalLabel.setText("$0.00");
+                totalLabel.setText("0.00");
             }
         } catch (Exception e) {
             priceField.setText("");
@@ -230,13 +230,13 @@ public class SalesFrame extends JFrame {
     private void calculateTotal() {
         try {
             if (!priceField.getText().isEmpty() && !quantityField.getText().isEmpty()) {
-                double price = Double.parseDouble(priceField.getText().replace("$", ""));
+                double price = Double.parseDouble(priceField.getText().replace("rs", ""));
                 int quantity = Integer.parseInt(quantityField.getText());
                 double total = price * quantity;
-                totalLabel.setText(String.format("$%.2f", total));
+                totalLabel.setText(String.format("%.2f", total));
             }
         } catch (NumberFormatException e) {
-            totalLabel.setText("$0.00");
+            totalLabel.setText("0.00");
         }
     }
 
@@ -298,7 +298,7 @@ public class SalesFrame extends JFrame {
         customerComboBox.setSelectedIndex(0);
         quantityField.setText("");
         priceField.setText("");
-        totalLabel.setText("$0.00");
+        totalLabel.setText("0.00");
     }
 
     private void loadSalesData() {
@@ -313,8 +313,8 @@ public class SalesFrame extends JFrame {
                         sale.getProductName(),
                         sale.getCustomerName(),
                         sale.getQuantitySold(),
-                        String.format("$%.2f", sale.getUnitPrice()),
-                        String.format("$%.2f", sale.getTotalAmount()),
+                        String.format("%.2f", sale.getUnitPrice()),
+                        String.format("%.2f", sale.getTotalAmount()),
                         sale.getSaleDate()
                 });
             }
