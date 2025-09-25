@@ -7,7 +7,7 @@ import java.util.List;
 
 public class ProductDAO {
 
-    //  Get all products
+    // Get all products
     public static List<Product> getAllProducts() {
         List<Product> products = new ArrayList<>();
         try (Connection conn = DBConnection.getConnection();
@@ -30,7 +30,7 @@ public class ProductDAO {
         return products;
     }
 
-    //  Add product
+    // Add product
     public static boolean addProduct(String name, String description, double price, int stock) {
         String sql = "INSERT INTO products(name, description, price, stock) VALUES(?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
@@ -46,7 +46,7 @@ public class ProductDAO {
         }
     }
 
-    //  Update full product (name, description, price, stock)
+    // Update full product
     public static boolean updateProduct(int productId, String name, String description, double price, int stock) {
         String sql = "UPDATE products SET name=?, description=?, price=?, stock=? WHERE product_id=?";
         try (Connection conn = DBConnection.getConnection();
@@ -63,7 +63,7 @@ public class ProductDAO {
         }
     }
 
-    //  Update stock only
+    // Update stock only
     public static boolean updateStock(int productId, int newStock) {
         String sql = "UPDATE products SET stock=? WHERE product_id=?";
         try (Connection conn = DBConnection.getConnection();
@@ -76,7 +76,8 @@ public class ProductDAO {
             return false;
         }
     }
-    //  Increment stock instead of overwrite
+
+    // Add stock incrementally
     public static boolean addStock(int productId, int addedStock) {
         String sql = "UPDATE products SET stock = stock + ? WHERE product_id=?";
         try (Connection conn = DBConnection.getConnection();
@@ -90,8 +91,7 @@ public class ProductDAO {
         }
     }
 
-
-    //  Delete product
+    // Delete product
     public static boolean deleteProduct(int productId) {
         String sql = "DELETE FROM products WHERE product_id=?";
         try (Connection conn = DBConnection.getConnection();
@@ -104,7 +104,7 @@ public class ProductDAO {
         }
     }
 
-    // Record sale + reduce stock
+    // Record sale and reduce stock
     public static boolean recordSale(int productId, int quantity) {
         String logSql = "INSERT INTO sales_log(product_id, quantity_sold) VALUES(?, ?)";
         String stockSql = "UPDATE products SET stock = stock - ? WHERE product_id=? AND stock >= ?";
@@ -138,33 +138,53 @@ public class ProductDAO {
         }
     }
 
-    //  Count all products
+    // Count all products
     public static int countProducts() {
         String sql = "SELECT COUNT(*) FROM products";
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
+            if (rs.next()) return rs.getInt(1);
         } catch (Exception e) {
             e.printStackTrace();
         }
         return 0;
     }
 
-    //  Count low-stock products
+    // Count low-stock products
     public static int countLowStock() {
-        String sql = "SELECT COUNT(*) FROM products WHERE stock < min_stock_level";
+        String sql = "SELECT COUNT(*) FROM products WHERE stock <= 5"; // adjust threshold if needed
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
+            if (rs.next()) return rs.getInt(1);
         } catch (Exception e) {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    // Get low-stock product list
+    public static List<Product> getLowStockProducts() {
+        List<Product> list = new ArrayList<>();
+        String sql = "SELECT * FROM products WHERE stock <= 5"; // threshold = 5
+        try (Connection conn = DBConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                Product p = new Product(
+                        rs.getInt("product_id"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        rs.getDouble("price"),
+                        rs.getInt("stock")
+                );
+                list.add(p);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 }
