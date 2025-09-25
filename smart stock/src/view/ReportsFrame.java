@@ -437,8 +437,8 @@ public class ReportsFrame extends JFrame {
                             sale.getProductName(),
                             customerName,
                             sale.getQuantitySold(),
-                            String.format("$%.2f", sale.getUnitPrice()),
-                            String.format("$%.2f", sale.getTotalAmount()),
+                            String.format("%.2f", sale.getUnitPrice()),
+                            String.format("%.2f", sale.getTotalAmount()),
                             new SimpleDateFormat("yyyy-MM-dd HH:mm").format(sale.getSaleDate())
                     });
 
@@ -455,8 +455,8 @@ public class ReportsFrame extends JFrame {
                         "",
                         "",
                         "TOTAL:",
-                        String.format("$%.2f", totalSales),
-                        "Average: " + String.format("$%.2f", totalSales / saleCount)
+                        String.format("%.2f", totalSales),
+                        "Average: " + String.format("%.2f", totalSales / saleCount)
                 });
             } else {
                 model.addRow(new Object[]{"No sales recorded for today", "", "", "", "", "", ""});
@@ -503,8 +503,8 @@ public class ReportsFrame extends JFrame {
                         "Total Quantity: " + totalQuantity,
                         "",
                         "GRAND TOTAL:",
-                        String.format("$%.2f", totalSales),
-                        "Average: " + String.format("$%.2f", totalSales / sales.size())
+                        String.format("%.2f", totalSales),
+                        "Average: " + String.format("%.2f", totalSales / sales.size())
                 });
             } else {
                 model.addRow(new Object[]{"No sales history available", "", "", "", "", "", ""});
