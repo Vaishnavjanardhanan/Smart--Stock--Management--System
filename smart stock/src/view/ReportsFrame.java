@@ -127,7 +127,7 @@ public class ReportsFrame extends JFrame {
 
             JPanel[] statsCards = {
                     createStatCard("Today's Sales", "💰", String.valueOf(todaySalesCount), SALES_COLOR),
-                    createStatCard("Today's Revenue", "💵", String.format("$%.2f", todayRevenue), SUCCESS_COLOR),
+                    createStatCard("Today's Revenue", "💵", String.format("%.2f", todayRevenue), SUCCESS_COLOR),
                     createStatCard("Low Stock", "⚠️", String.valueOf(lowStockCount), WARNING_COLOR),
                     createStatCard("Out of Stock", "🔴", String.valueOf(outOfStockCount), WARNING_COLOR),
                     createStatCard("Total Customers", "👥", String.valueOf(customers.size()), INFO_COLOR)
@@ -139,7 +139,7 @@ public class ReportsFrame extends JFrame {
         } catch (Exception e) {
             JPanel[] statsCards = {
                     createStatCard("Today's Sales", "💰", "0", SALES_COLOR),
-                    createStatCard("Today's Revenue", "💵", "$0.00", SUCCESS_COLOR),
+                    createStatCard("Today's Revenue", "💵", "0.00", SUCCESS_COLOR),
                     createStatCard("Database Status", "🔴", "Error", WARNING_COLOR)
             };
 
