@@ -488,13 +488,13 @@ public class HomeFrame extends JFrame {
         btnSales.addActionListener(e -> openSalesFrame());
         btnReports.addActionListener(e -> openReportsFrame());
 
-        // ✅ UPDATED: Settings Button now opens SettingsFrame
+        //  UPDATED: Settings Button now opens SettingsFrame
         btnSettings.addActionListener(e -> openSettingsFrame());
 
         btnLogout.addActionListener(e -> logout());
     }
 
-    // ✅ NEW METHOD: Open Settings Frame
+    //  NEW METHOD: Open Settings Frame
     private void openSettingsFrame() {
         if (!"ADMIN".equalsIgnoreCase(loggedInUser.getRole())) {
             JOptionPane.showMessageDialog(this,
@@ -659,3 +659,4 @@ public class HomeFrame extends JFrame {
         }
     }
 }
+
