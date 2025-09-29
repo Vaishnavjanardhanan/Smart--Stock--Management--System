@@ -25,7 +25,7 @@ public class RecordSaleFrame extends JFrame {
 
         add(panel);
 
-        // ✅ Action Listener
+        //  Action Listener
         recordBtn.addActionListener(e -> {
             try {
                 int productId = Integer.parseInt(productIdField.getText().trim());
