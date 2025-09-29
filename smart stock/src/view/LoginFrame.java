@@ -123,7 +123,7 @@ public class LoginFrame extends JFrame {
 
                 JOptionPane.showMessageDialog(this, "Welcome " + user.getUsername());
 
-                // ✅ Use the database connection from DBConnection class
+                //  Use the database connection from DBConnection class
                 if (databaseConnection != null && !databaseConnection.isClosed()) {
                     new HomeFrame(user, databaseConnection).setVisible(true);
                 } else {
@@ -153,7 +153,7 @@ public class LoginFrame extends JFrame {
         }
     }
 
-    // ✅ Registration form
+    //  Registration form
     private void openRegisterForm() {
         JTextField username = new JTextField();
         JPasswordField password = new JPasswordField();
