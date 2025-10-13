@@ -225,3 +225,43 @@ LoginHistoryDAO tracks both login and logout timestamps while computing total se
 
 Methods are static, allowing easy integration with GUI or web interfaces.
 
+
+# Product Management & User Login History Java Components
+
+This module provides essential components for product administration and user session tracking in a desktop business management application.
+
+## Features
+
+- Product management GUI with add, update, delete, sale recording, and refresh capabilities[1]
+- Session tracking for user login/logout and duration[2]
+- Modal dialog for product input with Swing UI[3]
+
+## File Structure
+
+| File Name            | Description                                                                               |
+|----------------------|-------------------------------------------------------------------------------------------|
+| ProductFrame.java    | Swing JFrame for product management. Provides table view, add/update/delete/sale actions, and refresh[1]. |
+| ProductFormDialog.java | JDialog for product data entry, designed for modal behavior in the admin UI[3].      |
+| LoginHistory.java    | Model for storing login session details (username, login/logout timestamps, duration)[2]. |
+
+## Requirements
+
+- Java Development Kit (JDK) 8 or later
+- Swing UI library (included with standard JDK)
+- Supporting DAO/model classes (e.g., `ProductDAO`, `Product`) for full data interaction[1]
+
+## Setup and Usage
+
+1. Integrate these files into your main Java desktop or business project.
+2. Ensure referenced model/DAO classes exist for product data operations.
+3. Launch `ProductFrame` from your application to access product management GUI[1].
+4. Use `ProductFormDialog` for product input tasks within management workflows[3].
+5. Track login activities using the `LoginHistory` model to record sessions and generate reports[2].
+
+## Notes
+
+- ProductFrame covers standard admin actions with table refresh after each change[1].
+- ProductFormDialog is designed for single use during product edits or additions[3].
+- LoginHistory supports storage and retrieval of session details for user accountability[2].
+- Extend features according to business requirements (e.g., more login analytics or product actions).
+
