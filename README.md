@@ -88,11 +88,11 @@ Here’s a GitHub-ready README file in the same format and style as your UserDAO
 
 ---
 
-Product and Login Management Modules for Java Applications
+#Product and Login Management Modules for Java Applications
 
 Java classes for managing products, inventory, and user login tracking — suitable for stock management and retail business systems.
 
-Features
+##Features
 
 Product management: Add, update, delete, and retrieve product details
 
@@ -108,7 +108,7 @@ Error handling: Built-in SQL exception management for robust database operations
 
 ---
 
-File Structure
+##File Structure
 
 File Name	Description
 
@@ -120,7 +120,7 @@ LoginHistoryDAO.java	DAO class to track login and logout history, calculate sess
 
 ---
 
-Requirements
+##Requirements
 
 Java Development Kit (JDK) 8 or higher
 
@@ -141,7 +141,7 @@ JDBC library matching your SQL database
 
 ---
 
-Setup and Usage
+##Setup and Usage
 
 1. Database setup:
 Create tables for products, sales_log, and login_history with proper schema (columns like product_id, name, stock, etc.).
@@ -177,7 +177,7 @@ Retrieve records using getLoginHistory() to display session logs or durations.
 
 ---
 
-Notes
+##Notes
 
 The Product model provides clean getters for all core attributes (ID, name, price, etc.)[2].
 
